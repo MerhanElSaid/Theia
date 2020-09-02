@@ -2,35 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Simple_CNN(nn.Module):
-	def __init__(self):
-		super(Simple_CNN,self).__init__()
-		self.layer1 = nn.Sequential(
-			nn.Conv2d(1,96,kernel_size=7,stride=4),
-			nn.BatchNorm2d(96),
-			nn.ReLU(),
-			nn.MaxPool2d(kernel_size=3,stride=2))
-		self.layer2 = nn.Sequential(
-			nn.Conv2d(96,256,kernel_size=5,padding=2),
-			nn.BatchNorm2d(256),
-			nn.ReLU(),
-			nn.MaxPool2d(kernel_size=3,stride=2))
-		self.layer3 = nn.Sequential(
-			nn.Conv2d(256,384,kernel_size=3,padding=1),
-			nn.BatchNorm2d(384),
-			nn.ReLU(),
-			nn.MaxPool2d(kernel_size=3,stride=2))
-		self.fc1 = nn.Linear(384*6*6,512)
-		self.fc2 = nn.Linear(512,512)
-		self.fc3 = nn.Linear(512,2)
-
-	def forward(self,x):
-		out = self.layer1(x)
-		out = self.layer2(out)
-		out = self.layer3(out)
-		out = out.view(out.size(0),-1)
-		out = F.dropout(F.relu(self.fc1(out)))
-		out = F.dropout(F.relu(self.fc2(out)))
-		out = self.fc3(out)
-
-		return out
+def loadModel(): 
+	myModel = torch.hub.load('pytorch/vision', 'resnet18', pretrained=True)
+	myModel.fc = nn.Sequential(nn.Linear(myModel.fc.in_features,512), nn.ReLU(), nn.Dropout(), nn.Linear(512, 2))
+	return myModel

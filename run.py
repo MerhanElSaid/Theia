@@ -4,7 +4,7 @@ import torchvision.datasets as dataset
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 
-from models.gender import Simple_CNN
+from models.gender import loadModel
 from utils import check_acc, plot_performance_curves, save_checkpoint
 
 use_gpu = torch.cuda.is_available()
@@ -32,16 +32,14 @@ def main():
 		])
 
 
-	train_data = dataset.ImageFolder(root='dataset/bw/train',transform=train_transform)
-	test_data = dataset.ImageFolder(root='dataset/bw/test',transform=test_transform)
+	train_data = dataset.ImageFolder(root='dataset/train',transform=train_transform)
+	test_data = dataset.ImageFolder(root='dataset/test',transform=test_transform)
 
 	train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size,shuffle=True,num_workers=1)
 	test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size,shuffle=False,num_workers=1)
 
 
-	#myModel = Simple_CNN()
-	myModel = torch.hub.load('pytorch/vision', 'resnet18', pretrained=True)
-	myModel.fc = nn.Sequential(nn.Linear(myModel.fc.in_features,512), nn.ReLU(), nn.Dropout(), nn.Linear(512, 2))
+	myModel = loadModel()
 
 	myModel.load_state_dict(torch.load('checkpoints/perfect_model_best.pth.tar')['state_dict'])
 
