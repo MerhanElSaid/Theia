@@ -1,0 +1,6 @@
+matplotlib
+numpy
+opencv-python==4.1.0.25
+pretrainedmodels==0.7.4
+torch==1.1.0
+torchvision==0.3.0
