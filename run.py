@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 
 from models.gender import loadModel
-from utils import check_acc, plot_performance_curves, save_checkpoint
+from utils import check_acc, plot_performance_curves, save_checkpoint, MyDataset
 
 use_gpu = torch.cuda.is_available()
 num_epochs = 100
@@ -31,17 +31,20 @@ def main():
 		transforms.Normalize([0.485],[0.229])
 		])
 
+	all_dataset = dataset.ImageFolder(root='dataset')
+	lengths = [int(len(all_dataset)*0.9), int(len(all_dataset)*0.1)+1]
+	subsetA, subsetB = torch.utils.data.random_split(all_dataset, lengths)
 
-	train_data = dataset.ImageFolder(root='dataset/train',transform=train_transform)
-	test_data = dataset.ImageFolder(root='dataset/test',transform=test_transform)
+	train_data = MyDataset(subsetA, transform=train_transform)
+	test_data = MyDataset(subsetB, transform=test_transform)
 
-	train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size,shuffle=True,num_workers=1)
-	test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size,shuffle=False,num_workers=1)
+	train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size,shuffle=True, num_workers=0, pin_memory=True)
+	test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size,shuffle=False, num_workers=0, pin_memory=True)
 
 
 	myModel = loadModel()
 
-	myModel.load_state_dict(torch.load('checkpoints/perfect_model_best.pth.tar')['state_dict'])
+	myModel.load_state_dict(torch.load('checkpoints/deploy_80_model.pth.tar')['state_dict'])
 
 	for name, param in myModel.named_parameters():
 		if("bn" not in name):

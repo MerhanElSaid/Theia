@@ -1,5 +1,6 @@
 import torch
 from torch.autograd import Variable
+from torch.utils.data import Dataset
 
 import numpy as np
 
@@ -7,6 +8,21 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import shutil
+
+class MyDataset(Dataset):
+    def __init__(self, subset, transform=None):
+        self.subset = subset
+        self.transform = transform
+        
+    def __getitem__(self, index):
+        x, y = self.subset[index]
+        if self.transform:
+            x = self.transform(x)
+        return x, y
+        
+    def __len__(self):
+        return len(self.subset)
+
 
 def check_acc(cnn,data_loader):
 	num_correct,num_sample = 0, 0
