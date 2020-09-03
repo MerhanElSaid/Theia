@@ -24,11 +24,13 @@ class MyDataset(Dataset):
         return len(self.subset)
 
 
-def check_acc(cnn,data_loader):
+def check_acc(cnn, data_loader, use_gpu):
 	num_correct,num_sample = 0, 0
 	for images,labels in data_loader:
-		images = Variable(images).repeat(1, 3, 1, 1).cuda()
-		labels = labels.cuda()
+		images = Variable(images).repeat(1, 3, 1, 1)
+		labels = Variable(labels)
+		if use_gpu:
+			images,labels = images.cuda(),labels.cuda()
 		outputs = cnn(images)
 		_,pred = torch.max(outputs.data,1)
 		num_sample += labels.size(0)

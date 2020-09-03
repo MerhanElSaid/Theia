@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision.datasets as dataset
 import torchvision.transforms as transforms
 from torch.autograd import Variable
+torch.manual_seed(0)
 
 from models.gender import loadModel
 from utils import check_acc, plot_performance_curves, save_checkpoint, MyDataset
@@ -44,7 +45,7 @@ def main():
 
 	myModel = loadModel()
 
-	myModel.load_state_dict(torch.load('checkpoints/deploy_80_model.pth.tar')['state_dict'])
+	myModel.load_state_dict(torch.load('checkpoints/80_1_checkpoint.pth.tar')['state_dict'])
 
 	for name, param in myModel.named_parameters():
 		if("bn" not in name):
@@ -74,7 +75,6 @@ def main():
 				images,labels = images.cuda(),labels.cuda()
 			
 			pred_labels = myModel(images)
-			
 			loss = criterion(pred_labels,labels)
 			loss.backward()
 			optimizer.step()
@@ -86,11 +86,11 @@ def main():
 		if epoch % 10 ==0 or epoch == num_epochs-1:
 
 			myModel.eval()
-			train_acc = check_acc(myModel,train_loader)
+			train_acc = check_acc(myModel, train_loader, use_gpu)
 			train_acc_history.append(train_acc)
 			print('Train accuracy for epoch {}: {} '.format(epoch + 1,train_acc))
 
-			val_acc = check_acc(myModel,test_loader)
+			val_acc = check_acc(myModel, test_loader, use_gpu)
 			myModel.train()
 			val_acc_history.append(val_acc)
 			print('Validation accuracy for epoch {} : {} '.format(epoch + 1,val_acc))
