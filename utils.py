@@ -37,7 +37,7 @@ def check_acc(cnn, data_loader, use_gpu):
 		num_correct += (pred == labels).sum()
 	return float(num_correct)/num_sample
 
-def plot_performance_curves(train_acc_history,val_acc_history,epoch_history):
+def plot_performance_curves(train_acc_history, val_acc_history, epoch_history, save_path):
 	plt.figure()
 	plt.plot(np.array(epoch_history),np.array(train_acc_history),label = 'Training accuracy')
 	plt.plot(np.array(epoch_history),np.array(val_acc_history),label = 'Validation accuracy')
@@ -45,7 +45,7 @@ def plot_performance_curves(train_acc_history,val_acc_history,epoch_history):
 	plt.ylabel('Accuracy')
 	plt.xlabel('Number of epochs')
 	plt.legend()
-	plt.savefig('logs/acc_recode.png')
+	plt.savefig(save_path)
 
 def save_checkpoint(state,is_best,file_name = 'checkpoints/checkpoint.pth.tar'):
 	torch.save(state,file_name)

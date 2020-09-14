@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+project_dir = (Path(__file__).parent / '..').resolve()
+if str(project_dir) not in sys.path: sys.path.insert(0, str(project_dir))
+
 import torch 
 import torch.nn as nn
 import torchvision.datasets as dataset
@@ -13,6 +18,7 @@ num_epochs = 100
 batch_size = 128
 
 def main():
+	MAIN_DIR = project_dir._str
 	
 	train_transform = transforms.Compose([
 		transforms.Resize(226),
@@ -32,7 +38,7 @@ def main():
 		transforms.Normalize([0.485],[0.229])
 		])
 
-	all_dataset = dataset.ImageFolder(root='dataset')
+	all_dataset = dataset.ImageFolder(root=MAIN_DIR +'/dataset/gender')
 	lengths = [int(len(all_dataset)*0.9), int(len(all_dataset)*0.1)+1]
 	subsetA, subsetB = torch.utils.data.random_split(all_dataset, lengths)
 
@@ -45,7 +51,7 @@ def main():
 
 	myModel = loadModel()
 
-	myModel.load_state_dict(torch.load('checkpoints/80_1_checkpoint.pth.tar')['state_dict'])
+	myModel.load_state_dict(torch.load(MAIN_DIR+'/checkpoints/gender/deploy_80_model.pth.tar')['state_dict'])
 
 	for name, param in myModel.named_parameters():
 		if("bn" not in name):
@@ -95,7 +101,7 @@ def main():
 			val_acc_history.append(val_acc)
 			print('Validation accuracy for epoch {} : {} '.format(epoch + 1,val_acc))
 			epoch_history.append(epoch+1)
-			plot_performance_curves(train_acc_history,val_acc_history,epoch_history)
+			plot_performance_curves(train_acc_history, val_acc_history, epoch_history, MAIN_DIR+'/logs/gender/acc_recode.png')
 
 			is_best = val_acc > best_val_acc
 			best_val_acc = max(val_acc,best_val_acc)
@@ -103,7 +109,7 @@ def main():
 				{'epoch':epoch+1,
 				'state_dict':myModel.state_dict(),
 				'best_val_acc':best_val_acc,
-				'optimizer':optimizer.state_dict()},is_best)
+				'optimizer':optimizer.state_dict()},is_best, MAIN_DIR+'/checkpoints/gender/best_checkpoint.pth.tar')
 
 if __name__ == '__main__':
 	main()
