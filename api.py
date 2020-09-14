@@ -30,7 +30,7 @@ def get_prediction(image):
     predicted_idx = y_hat.item()
     return gender_index[predicted_idx]
 
-@app.route('/predict',methods=['POST'])
+@app.route('/predict',methods=['POST', 'GET'])
 def predict():
     if request.method == 'POST':
         data = request.get_json()
