@@ -33,8 +33,7 @@ def get_prediction(image):
 @app.route('/predict',methods=['POST'])
 def predict():
     if request.method == 'POST':
-        data = request.get_json()
-        img_bytes = data["body"]["formdata"][4]["src"]
+        img_bytes = request.files['image_file'].read()
         image = Image.open(io.BytesIO(img_bytes))
         gender = get_prediction(image)
         return jsonify({"request_id":"","time_used":0,"faces":[{"face_token":"","face_rectangle":{},"landmark":{},"attributes":{"gender":{"value":gender},"age":{"value":0}}}],"image_id":"","face_num":1})
