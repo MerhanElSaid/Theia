@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 torch.manual_seed(0)
 
-from models.gender import loadModel
+from models.gender import loadGenderModel
 from utils import check_acc, plot_performance_curves, save_checkpoint, MyDataset
 
 use_gpu = torch.cuda.is_available()
