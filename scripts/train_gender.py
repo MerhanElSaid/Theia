@@ -51,7 +51,7 @@ def main():
 
 	myModel = loadModel()
 
-	myModel.load_state_dict(torch.load(MAIN_DIR+'/checkpoints/gender/deploy_80_model.pth.tar')['state_dict'])
+	myModel.load_state_dict(torch.load(MAIN_DIR+'/checkpoints/gender/kaggle_model_best_96.pth.tar')['state_dict'])
 
 	for name, param in myModel.named_parameters():
 		if("bn" not in name):
