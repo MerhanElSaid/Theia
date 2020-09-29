@@ -49,7 +49,7 @@ if device == "cuda":
 
 age_model.eval()
 
-def transform_image(image):
+def transform_gender_image(image):
     my_transforms =  transforms.Compose([
         transforms.Resize(226),
         transforms.CenterCrop(224),
@@ -67,7 +67,7 @@ def transform_age_image(image):
     return inputs
 
 def get_gender_prediction(image):
-    tensor = transform_image(image=image)
+    tensor = transform_gender_image(image=image)
     outputs = gender_model.forward(tensor)
     _, y_hat = outputs.max(1)
     predicted_idx = y_hat.item()
@@ -80,7 +80,7 @@ def get_age_prediction(image):
         outputs = F.softmax(age_model(tensor), dim=-1).cpu().numpy()
         ages = np.arange(0, 101)
         predicted_ages = (outputs * ages).sum(axis=-1)[0]
-        return predicted_ages
+        return int(predicted_ages)
 
 @app.route('/predict',methods=['POST'])
 def predict():
@@ -96,4 +96,4 @@ def default():
     return 'API Working'
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=8080)
