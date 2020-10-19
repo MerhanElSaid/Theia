@@ -1,76 +1,74 @@
+import cv2
+import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+import torch.utils.data as utils
+import torch
+import torch.nn as nn
+from torchvision import transforms
 from PIL import Image
-import csv 
-
- 
-def prepareData(file, X, Y, b):
-  with open(file,'r') as csvin:
-    data=csv.reader(csvin)
-    for row in data:
-        temp = torch.zeros((48, 48), dtype= int)
-        if row[b] == 'pixels':
-          continue
-        pixs = row[b].split( )
-        for j in range(48):
-          for i in range(48):
-              temp[i][j] = (float(pixs[i+(j*48)]))
-        
-        if b:
-          Y.append(int(row[0]))
-        X.append(temp)
-  return X, Y
 
 
-class CustomTensorDataset(Dataset):
-    """TensorDataset with support of transforms.
-    """
-    def __init__(self, x_data, y_data, transform=None):
+
+
+def load_fer2013(path_to_fer_csv):
+    data = pd.read_csv(path_to_fer_csv)
+    pixels = data['pixels'].tolist()
+    width, height = 48, 48
+    faces = []
+    for pixel_sequence in pixels:
+        face = [int(pixel) for pixel in pixel_sequence.split(' ')]
+        face = np.asarray(face).reshape(width, height)
+        face = cv2.resize(face.astype('uint8'), (48,48))
+        faces.append(face.astype('float64'))
+    faces = np.asarray(faces)
+    #faces = np.expand_dims(faces, -1)
+    emotions = data['emotion'].values
+    return faces, emotions
+
+
+
+class EmotionDataset(utils.Dataset):
+    def __init__(self, X, y, transform=None):
+        self.X = X
+        self.y = y
         self.transform = transform
-        self.x_data = x_data
-        self.y_data = y_data
- 
+        
+    def __len__(self):
+        return len(self.X)
+    
     def __getitem__(self, index):
-        x = self.x_data[index]
-        x = x.numpy()
-        x = Image.fromarray(np.uint8(x))
-        y = self.y_data[index]
-        if self.transform:
-          x = self.transform(x)
-             
-        return x, y   
+        x = self.X[index]
+        x = Image.fromarray((x))
+        if self.transform is not None:
+            x = self.transform(x)
+        y = self.y[index]
+        return x, y
 
 
-def get_dataloaders(path_csv='', train_batch=3000, val_batch=500):
-  Training_x = []
-  Training_y = []
+def get_dataloaders(path_to_fer_csv='', tr_batch_sz=1000, val_batch_sz=500):
+    faces, emotions = load_fer2013(path_to_fer_csv)
+    train_X, val_X, train_y, val_y = train_test_split(faces, emotions, test_size=0.2,
+                                                random_state = 1, shuffle=True)
+    train_transform = transforms.Compose([
+                        transforms.RandomHorizontalFlip(),
+                        #transforms.RandomRotation(30, fill=(0,)),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.507395516207, ),(0.255128989415, )) 
+                        ])
+    val_transform = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.507395516207, ),(0.255128989415, ))
+                    ])  
 
-  Training_x, Training_y = prepareData(path_csv, Training_x, Training_y, 1) 
+    train_dataset = EmotionDataset(train_X, train_y, train_transform)
+    val_dataset = EmotionDataset(val_X, val_y, val_transform)
 
-
-  train_transform = transforms.Compose([transforms.RandomCrop(44),
-                                      transforms.RandomHorizontalFlip(p=0.5),
-                                      transforms.RandomRotation(10),
-                                      transforms.ToTensor()
-                                      ])
-  dataset = CustomTensorDataset(Training_x, Training_y, transform= train_transform)
-  test = int(len(dataset)*0.2)  
-  valid = int(len(dataset)*0.1)
-
-  test_data = torch.utils.data.Subset(dataset, range(test)) 
-
-  valid_data = torch.utils.data.Subset(dataset, range(test, test+valid))
-
-  train_data = torch.utils.data.Subset(dataset, range(valid + test, len(dataset)))
-
-
-  train_loader = torch.utils.data.DataLoader(train_data, batch_size=train_batch, shuffle=True)
-  valid_loader = torch.utils.data.DataLoader(valid_data, batch_size = val_batch)
-  test_loader = torch.utils.data.DataLoader(test_data, batch_size = val_batch)
-
-  Loaders ={
-      'train' : train_loader,
-      'valid' : valid_loader,
-      'test' : test_loader
-  }
-  return Loaders
+    trainloader = utils.DataLoader(train_dataset, tr_batch_sz)
+    validloader = utils.DataLoader(val_dataset, val_batch_sz)
+    Loaders ={
+      'train' : trainloader,
+      'valid' : validloader
+    }
+    return Loaders

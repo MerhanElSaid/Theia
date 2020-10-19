@@ -1,7 +1,12 @@
+import sys
+from pathlib import Path
+project_dir = (Path(__file__).parent / '..').resolve()
+if str(project_dir) not in sys.path: sys.path.insert(0, str(project_dir))
+
 import torch
 import torch.nn as nn
-from models import *
-from dataset import *
+from models.Facial_Exp import *
+from dataset.Face_Exp.dataset import *
 
 
 def Train(model, n_epochs, optimizer, criterion, Loaders, train_on_gpu):
@@ -69,18 +74,18 @@ def Train(model, n_epochs, optimizer, criterion, Loaders, train_on_gpu):
     return model
 
 def main():
-    Loaders = get_dataloaders()
+    Loaders = get_dataloaders('dataset/Face_Exp/fer2013.csv')
     print('Data Preprocessed and got DataLoaders...')
 
-    model = Face_Emotion_CNN()
-    training_on_gpu = torch.cuda.is_available():
+    model = Face_Emotion_CNN().cuda()
+    training_on_gpu = torch.cuda.is_available()
     
     epochs = 200
     criterion = nn.NLLLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     print('Starting Training loop...\n')
-    model = Train(model, epochs, optimizer, criterion, Loaders, train_on_gpu)  
+    model = Train(model, epochs, optimizer, criterion, Loaders, training_on_gpu)  
 
 
 if __name__ == '__main__':
