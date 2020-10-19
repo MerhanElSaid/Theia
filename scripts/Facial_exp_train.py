@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from model import *
+from models import *
 from dataset import *
 
 
