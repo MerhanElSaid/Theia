@@ -116,6 +116,7 @@ def get_expr_prediction(image):
             emotion_prediction = 100 * proba[i].item()
             mood_items[emotion_label] = emotion_prediction
         return mood_items
+        
 
 
 @app.route('/predict',methods=['POST'])
