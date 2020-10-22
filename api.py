@@ -1,6 +1,6 @@
 import io
 import json
-import torch 
+import torch
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
@@ -12,11 +12,13 @@ import urllib.request
 
 from models.gender import loadGenderModel
 from models.age import loadAgeModel
+from models.Facial_Exp import Face_Emotion_CNN
 from defaults import _C as cfg
 
 app = Flask(__name__)
 
 #### Gender Model
+
 gender_index = {0:"Female", 1:"Male"}
 gender_model = loadGenderModel()
 gender_model.load_state_dict(torch.load('checkpoints/gender/deploy_80_model.pth.tar')['state_dict'])
@@ -29,6 +31,14 @@ age_model = age_model.to(device)
 
 # load checkpoint
 resume_path = Path(__file__).resolve().parent.joinpath("checkpoints/age", "epoch044_0.02343_3.9984.pth")
+
+### Facial Expression Model
+
+FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
+Exp_model = Face_Emotion_CNN()
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/FER_trained_model.pt'))
+Exp_model.eval()
+
 
 if not resume_path.is_file():
     print(f"=> model path is not set; start downloading trained model to {resume_path}")
@@ -49,6 +59,7 @@ if device == "cuda":
 
 age_model.eval()
 
+
 def transform_gender_image(image):
     my_transforms =  transforms.Compose([
         transforms.Resize(226),
@@ -57,14 +68,25 @@ def transform_gender_image(image):
         transforms.ToTensor(),
         transforms.Normalize([0.485],[0.229])
         ])
-    return my_transforms(image).unsqueeze(0).repeat(1,3,1,1)
+    return my_transforms(image).unsqueeze(0).repeat(1, 3, 1, 1)
+
 
 def transform_age_image(image):
     img_size = 224
     faces = np.empty((1, img_size, img_size, 3))
-    faces[0] = image.resize((img_size,img_size))
+    faces[0] = image.resize((img_size, img_size))
     inputs = torch.from_numpy(np.transpose(faces.astype(np.float32), (0, 3, 1, 2))).to('cuda')
     return inputs
+
+
+def transform_facial_exp(image):
+    exp_trans = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),
+        transforms.Resize(48),
+        transforms.ToTensor()
+    ])
+    return exp_trans(image).unsqueeze(0)
+
 
 def get_gender_prediction(image):
     tensor = transform_gender_image(image=image)
@@ -82,6 +104,20 @@ def get_age_prediction(image):
         predicted_ages = (outputs * ages).sum(axis=-1)[0]
         return int(predicted_ages)
 
+
+def get_expr_prediction(image):
+    with torch.no_grad():
+        image = transform_facial_exp(image)
+        output = Exp_model(image)
+        proba = torch.softmax(output, 1)[0]
+        mood_items = {}
+        for i in range(0, len(FER_2013_EMO_DICT)):
+            emotion_label = FER_2013_EMO_DICT[i]
+            emotion_prediction = 100 * proba[i].item()
+            mood_items[emotion_label] = emotion_prediction
+        return mood_items
+
+
 @app.route('/predict',methods=['POST'])
 def predict():
     if request.method == 'POST':
@@ -89,11 +125,15 @@ def predict():
         image = Image.open(io.BytesIO(img_bytes))
         gender = get_gender_prediction(image)
         age = get_age_prediction(image)
-        return jsonify({"request_id":"","time_used":0,"faces":[{"face_token":"","face_rectangle":{},"landmark":{},"attributes":{"gender":{"value":gender},"age":{"value":age}}}],"image_id":"","face_num":1})
+        expression = get_expr_prediction(image)
+        return jsonify({"request_id": "", "time_used": 0, 
+        "faces": [{"face_token": "", "face_rectangle": {}, "landmark": {}, "attributes": {"gender": {"value": gender}, "age": {"value": age}, "expressions": {"value": expression}}}], "image_id": "", "face_num": 1})
+
 
 @app.route('/')
 def default():
     return 'API Working'
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
