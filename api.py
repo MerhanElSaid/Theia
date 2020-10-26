@@ -76,10 +76,7 @@ def transform_age_image(image):
     if image.mode == 'L':
         faces = np.empty((1, img_size, img_size))
         faces[0] = image.resize((img_size, img_size))
-        inputs = torch.from_numpy(np.transpose(faces.astype(np.float32), (0, 1, 2))).to('cuda').unsqueeze(0).repeat(1,
-                                                                                                                    3,
-                                                                                                                    1,
-                                                                                                                    1)
+        inputs = torch.from_numpy(np.transpose(faces.astype(np.float32), (0, 1, 2))).to('cuda').unsqueeze(0).repeat(1, 3, 1, 1)
     else:
         faces = np.empty((1, img_size, img_size, 3))
         faces[0] = image.resize((img_size, img_size))
@@ -139,7 +136,7 @@ def predict():
         return jsonify({"request_id": "", "time_used": 0,
                         "faces": [{"face_token": "", "face_rectangle": {}, "landmark": {},
                                    "attributes": {"gender": {"value": gender}, "age": {"value": age},
-                                                  "expressions": {{"value": expression}, {"probably": most_prob}}}}],
+                                                  "expressions": [{"value": expression}, {"probably": most_prob}]}}],
                         "image_id": "",
                         "face_num": 1})
 
