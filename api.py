@@ -9,12 +9,11 @@ from PIL import Image
 from flask import Flask, jsonify, request
 from pathlib import Path
 import urllib.request
-import cv2
 
 from models.gender import loadGenderModel
 from models.age import loadAgeModel
 from models.Facial_Exp import Face_Emotion_CNN
-from defaults import _C as cfg
+#from defaults import _C as cfg
 
 app = Flask(__name__)
 
@@ -22,7 +21,7 @@ app = Flask(__name__)
 
 gender_index = {0: "Female", 1: "Male"}
 gender_model = loadGenderModel()
-gender_model.load_state_dict(torch.load('checkpoints/gender/deploy_80_model.pth.tar')['state_dict'])
+gender_model.load_state_dict(torch.load('checkpoints/gender/deploy_80_model.pth.tar', map_location=torch.device('cpu'))['state_dict'])
 gender_model.eval()
 
 ### Age Model
@@ -40,7 +39,7 @@ age_model.eval()
 
 FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
 Exp_model = Face_Emotion_CNN()
-Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/FER_trained_model.pt'))
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/FER_trained_model.pt', map_location="cpu"))
 Exp_model.eval()
 
 '''
