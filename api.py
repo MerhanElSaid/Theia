@@ -6,14 +6,13 @@ import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import numpy as np
 from PIL import Image
+import os
 from flask import Flask, jsonify, request
-from pathlib import Path
 import urllib.request
 
 from models.gender import loadGenderModel
 from models.age import loadAgeModel
 from models.Facial_Exp import Face_Emotion_CNN
-#from defaults import _C as cfg
 
 app = Flask(__name__)
 
@@ -27,6 +26,8 @@ gender_model.eval()
 ### Age Model
 age_model = loadAgeModel(model_name="se_resnext50_32x4d", pretrained=None)
 device = "cuda" if torch.cuda.is_available() else "cpu"
+if not os.path.isfile('checkpoints/age/79.pth'):
+    urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=19UZB5VZvaQZSltXWeNWYo2v5W892uQ9G", "checkpoints/age/79.pth")
 checkpoint = torch.load('checkpoints/age/79.pth', map_location="cpu")
 age_model.load_state_dict(checkpoint['state_dict'])
 age_model = age_model.to(device)
@@ -42,19 +43,9 @@ Exp_model = Face_Emotion_CNN()
 Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/FER_trained_model.pt', map_location="cpu"))
 Exp_model.eval()
 
-'''
-if Path(resume_path).is_file():
-    print("=> loading checkpoint '{}'".format(resume_path))
-    checkpoint = torch.load(resume_path, map_location="cpu")
-    age_model.load_state_dict(checkpoint['state_dict'])
-    print("=> loaded checkpoint '{}'".format(resume_path))
-else:
-    raise ValueError("=> no checkpoint found at '{}'".format(resume_path))
-'''
+
 if device == "cuda":
     cudnn.benchmark = True
-
-age_model.eval()
 
 
 def transform_gender_image(image):
@@ -140,4 +131,4 @@ def default():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run()
