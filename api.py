@@ -87,6 +87,7 @@ def get_gender_prediction(image):
 def get_age_prediction(image):
     with torch.no_grad():
         tensor = transform_age_image(image=image)
+        tensor = tensor.to(device)
         outputs = age_model(tensor)
         _, pred = torch.topk(outputs, 1)
         age_vector = pred[0].cpu().detach().numpy() * 4
