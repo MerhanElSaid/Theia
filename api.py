@@ -28,8 +28,7 @@ age_model = loadAgeModel(model_name="se_resnext50_32x4d", pretrained=None)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 if not os.path.isfile('checkpoints/age/79.pth'):
     urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=19UZB5VZvaQZSltXWeNWYo2v5W892uQ9G", "checkpoints/age/79.pth")
-checkpoint = torch.load('checkpoints/age/79.pth', map_location="cpu")
-age_model.load_state_dict(checkpoint['state_dict'])
+age_model.load_state_dict(torch.load('checkpoints/age/79.pth', map_location="cpu")['state_dict'])
 age_model = age_model.to(device)
 age_model.eval()
 
@@ -90,7 +89,7 @@ def get_age_prediction(image):
         tensor = transform_age_image(image=image)
         outputs = age_model(tensor)
         _, pred = torch.topk(outputs, 1)
-        age_vector = pred * 4
+        age_vector = pred[0].cpu().detach().numpy() * 4
         predicted_ages = int(age_vector)
         return int(predicted_ages)
 
