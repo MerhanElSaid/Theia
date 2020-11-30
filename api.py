@@ -68,11 +68,12 @@ def transform_age_image(image):
 
 
 def transform_facial_exp(image):
-    exp_trans = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),
-        transforms.Resize((48, 48)),
-        transforms.ToTensor()
-    ])
+    exp_trans = transforms.Compose([transforms.Resize(50),
+                                    transforms.CenterCrop(48),
+                                    transforms.Grayscale(num_output_channels=1),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize([0.485],
+                                                         [0.229])])
     return exp_trans(image).unsqueeze(0)
 
 
