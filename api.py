@@ -39,7 +39,7 @@ age_model.eval()
 
 FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
 Exp_model = Face_Emotion_CNN()
-Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/FER_trained_model.pt', map_location="cpu"))
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth', map_location="cpu"))
 Exp_model.eval()
 
 
