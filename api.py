@@ -10,7 +10,7 @@ import os
 from flask import Flask, jsonify, request
 import urllib.request
 
-from models.gender import loadGenderModel
+from models.gender import Model_gend
 from models.age import loadAgeModel
 from models.Facial_Exp import Face_Emotion_CNN
 
@@ -18,9 +18,9 @@ app = Flask(__name__)
 
 #### Gender Model
 
-gender_index = {0: "Female", 1: "Male"}
-gender_model = loadGenderModel()
-gender_model.load_state_dict(torch.load('checkpoints/gender/deploy_80_model.pth.tar', map_location=torch.device('cpu'))['state_dict'])
+gender_index = {1: "Female", 0: "Male"}
+gender_model = Model_gend()
+gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gend_Py2.pth', map_location=torch.device('cpu')))
 gender_model.eval()
 
 ### Age Model
@@ -48,14 +48,11 @@ if device == "cuda":
 
 
 def transform_gender_image(image):
-    my_transforms = transforms.Compose([
-        transforms.Resize(226),
-        transforms.CenterCrop(224),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485], [0.229])
-    ])
-    return my_transforms(image).unsqueeze(0).repeat(1, 3, 1, 1)
+    my_transforms = transforms.Compose([transforms.Resize(121),
+                                         transforms.RandomCrop(120),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    return my_transforms(image).unsqueeze(0)
 
 
 def transform_age_image(image):
