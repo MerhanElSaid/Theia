@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 gender_index = {1: "Female", 0: "Male"}
 gender_model = Model_gend()
-gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gend_Py2.pth', map_location=torch.device('cpu')))
+gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth', map_location=torch.device('cpu')))
 gender_model.eval()
 
 ### Age Model
@@ -48,10 +48,10 @@ if device == "cuda":
 
 
 def transform_gender_image(image):
-    my_transforms = transforms.Compose([transforms.Resize(121),
-                                         transforms.RandomCrop(120),
-                                         transforms.ToTensor(),
-                                         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    my_transforms = transforms.Compose([transforms.Resize(50),
+                                        transforms.RandomCrop(48),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])
     return my_transforms(image).unsqueeze(0)
 
 

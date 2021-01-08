@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import torch.nn as nn
+
 
 class Model_gend(nn.Module):
 	def __init__(self):
@@ -23,7 +25,7 @@ class Model_gend(nn.Module):
 		self.cnn5_bn = nn.BatchNorm2d(128)
 		self.cnn6_bn = nn.BatchNorm2d(256)
 		self.cnn7_bn = nn.BatchNorm2d(256)
-		self.fc1 = nn.Linear(6400, 1024)
+		self.fc1 = nn.Linear(2304, 1024)
 		self.fc2 = nn.Linear(1024, 256)
 		self.dropout = nn.Dropout(0.3)
 		self.fc3 = nn.Linear(256, 2)
@@ -35,9 +37,7 @@ class Model_gend(nn.Module):
 		x = self.relu(self.pool2(self.cnn4_bn(self.dropout(self.cnn4(x)))))
 		x = self.relu(self.pool2(self.cnn5_bn(self.cnn5(x))))
 		x = self.relu(self.pool2(self.cnn6_bn(self.dropout(self.cnn6(x)))))
-		x = self.relu(self.pool2(self.cnn7_bn(self.dropout(self.cnn7(x)))))
 		x = x.view(x.size(0), -1)
-
 		x = self.relu(self.dropout(self.fc1(x)))
 		x = self.relu(self.dropout(self.fc2(x)))
 		x = self.fc3(x)
