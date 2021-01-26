@@ -3,13 +3,12 @@ import json
 import torch
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
-import torch.nn.functional as F
 import numpy as np
 from PIL import Image
 import os
 from flask import Flask, jsonify, request
 import urllib.request
-
+import cv2
 from models.gender import Model_gend
 from models.age import loadAgeModel
 from models.Facial_Exp import Face_Emotion_CNN
@@ -74,7 +73,38 @@ def transform_facial_exp(image):
     return exp_trans(image).unsqueeze(0)
 
 
+def detect_face(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    face_cascade = cv2.CascadeClassifier('scripts/haarcascade_frontalface_default.xml')
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
+
+    if len(faces) == 0:
+        flag = 0
+        faces = [0]
+    else:
+        flag = 1
+        (x, y, w, h) = faces[0]
+
+    return flag, faces[0]
+
+
+def image_crop(img, x, y, w, h):
+    _, _, ch = img.shape
+    cropped = np.zeros((w, h, ch))
+    for i in range(ch):
+        cropped[:, :, i] = img[y:y + w, x:x + h, i]
+
+    return cropped
+
+
 def get_gender_prediction(image):
+    im = np.array(image)
+    flag, face = detect_face(im)
+
+    if flag == 1:
+        image = image_crop(im, face[0], face[1], face[2], face[3])
+        image = Image.fromarray(np.uint8(image))
+
     tensor = transform_gender_image(image=image)
     outputs = gender_model.forward(tensor)
     _, y_hat = outputs.max(1)
@@ -94,6 +124,13 @@ def get_age_prediction(image):
 
 
 def get_expr_prediction(image):
+    im = np.array(image)
+    flag, face = detect_face(im)
+
+    if flag == 1:
+        image = image_crop(im, face[0], face[1], face[2], face[3])
+        image = Image.fromarray(np.uint8(image))
+        
     with torch.no_grad():
         image = transform_facial_exp(image)
         output = Exp_model(image)
