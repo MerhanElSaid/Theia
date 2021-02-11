@@ -1,11 +1,13 @@
+import torch.hub
 import torch.nn as nn
-import pretrainedmodels
-import pretrainedmodels.utils
 
 
-def loadAgeModel(model_name="se_resnext50_32x4d", num_classes=22, pretrained="imagenet"):
-    model = pretrainedmodels.__dict__[model_name](pretrained=pretrained)
-    dim_feats = model.last_linear.in_features
-    model.last_linear = nn.Linear(dim_feats, num_classes)
-    model.avg_pool = nn.AdaptiveAvgPool2d(1)
+def loadAgeModel():
+    model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
+
+    for name, param in model.named_parameters():
+        param.requires_grad = False
+    num_classes = 33
+
+    model.fc = nn.Sequential(nn.Linear(model.fc.in_features,512), nn.ReLU(), nn.Dropout(), nn.Linear(512, num_classes))
     return model

@@ -6,31 +6,34 @@ import torch.backends.cudnn as cudnn
 import numpy as np
 from PIL import Image
 import os
-from flask import Flask, jsonify, request
 import urllib.request
+from flask import Flask, jsonify, request
+import random
 import cv2
 from models.gender import Model_gend
 from models.age import loadAgeModel
 from models.Facial_Exp import Face_Emotion_CNN
 
 app = Flask(__name__)
-
+device = "cuda" if torch.cuda.is_available() else "cpu"
 #### Gender Model
 
 gender_index = {1: "Female", 0: "Male"}
 gender_model = Model_gend()
-gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth', map_location=torch.device('cpu')))
+gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth', map_location=torch.device(device)))
 gender_model.eval()
 
 ### Age Model
-age_model = loadAgeModel(model_name="se_resnext50_32x4d", pretrained=None)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-if not os.path.isfile('checkpoints/age/79.pth'):
-    urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=19UZB5VZvaQZSltXWeNWYo2v5W892uQ9G", "checkpoints/age/79.pth")
-age_model.load_state_dict(torch.load('checkpoints/age/79.pth', map_location="cpu")['state_dict'])
-age_model = age_model.to(device)
+age_classes = [0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 3, 30, 31, 32,
+               4, 5, 6, 7, 8, 9]
+
+age_model = loadAgeModel()
+if not os.path.isfile('checkpoints/age/Colored_age.pth'):
+    urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah", "checkpoints/age/Colored_age.pth")
+age_model.load_state_dict(torch.load('checkpoints/age/Colored_age.pth', map_location=torch.device(device)))
 age_model.eval()
 
+#"https://drive.google.com/file/d/1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah/view?usp=sharing"
 # load checkpoint
 #resume_path = Path(__file__).resolve().parent.joinpath("checkpoints/age", "79.pth")
 
@@ -38,7 +41,7 @@ age_model.eval()
 
 FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
 Exp_model = Face_Emotion_CNN()
-Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth', map_location="cpu"))
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth', map_location=torch.device(device)))
 Exp_model.eval()
 
 
@@ -55,12 +58,13 @@ def transform_gender_image(image):
 
 
 def transform_age_image(image):
-    exp_trans = transforms.Compose([
-        transforms.Resize(224),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor()
-    ])
-    return exp_trans(image).unsqueeze(0).repeat(1, 3, 1, 1)
+    age_trans = transforms.Compose([transforms.Resize(201),
+                                    transforms.RandomCrop(196),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                         std=[0.229, 0.224, 0.225])])
+
+    return age_trans(image).unsqueeze(0)
 
 
 def transform_facial_exp(image):
@@ -104,8 +108,10 @@ def get_gender_prediction(image):
     if flag == 1:
         image = image_crop(im, face[0], face[1], face[2], face[3])
         image = Image.fromarray(np.uint8(image))
+        #image.save('cropped.jpg')
 
     tensor = transform_gender_image(image=image)
+    tensor = tensor.to(device)
     outputs = gender_model.forward(tensor)
     _, y_hat = outputs.max(1)
     predicted_idx = y_hat.item()
@@ -113,14 +119,22 @@ def get_gender_prediction(image):
 
 
 def get_age_prediction(image):
+    im = np.array(image)
+    flag, face = detect_face(im)
+
+    if flag == 1:
+        image = image_crop(im, face[0], face[1], face[2], face[3])
+        image = Image.fromarray(np.uint8(image))
+
     with torch.no_grad():
         tensor = transform_age_image(image=image)
         tensor = tensor.to(device)
         outputs = age_model(tensor)
         _, pred = torch.topk(outputs, 1)
-        age_vector = pred[0].cpu().detach().numpy() * 4
-        predicted_ages = int(age_vector)
-        return int(predicted_ages)
+        pred = age_classes[pred.item()] * 3 + random.randint(1, 3)
+        #age_vector = pred[0].cpu().detach().numpy() * 4
+        #predicted_ages = int(age_vector)
+        return int(pred)
 
 
 def get_expr_prediction(image):
@@ -130,9 +144,10 @@ def get_expr_prediction(image):
     if flag == 1:
         image = image_crop(im, face[0], face[1], face[2], face[3])
         image = Image.fromarray(np.uint8(image))
-        
+
     with torch.no_grad():
         image = transform_facial_exp(image)
+        image = image.to(device)
         output = Exp_model(image)
         prob = torch.softmax(output, 1)[0]
         _, prediction = torch.topk(prob, 1)
