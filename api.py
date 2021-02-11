@@ -20,7 +20,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 gender_index = {1: "Female", 0: "Male"}
 gender_model = Model_gend()
-gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth', map_location=torch.device(device)))
+gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth'))
+gender_model = gender_model.to(device)
 gender_model.eval()
 
 ### Age Model
@@ -30,7 +31,8 @@ age_classes = [0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 
 age_model = loadAgeModel()
 if not os.path.isfile('checkpoints/age/Colored_age.pth'):
     urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah", "checkpoints/age/Colored_age.pth")
-age_model.load_state_dict(torch.load('checkpoints/age/Colored_age.pth', map_location=torch.device(device)))
+age_model.load_state_dict(torch.load('checkpoints/age/Colored_age.pth'))
+age_model = age_model.to(device)
 age_model.eval()
 
 #"https://drive.google.com/file/d/1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah/view?usp=sharing"
@@ -41,7 +43,8 @@ age_model.eval()
 
 FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
 Exp_model = Face_Emotion_CNN()
-Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth', map_location=torch.device(device)))
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth'))
+Exp_model = Exp_model.to(device)
 Exp_model.eval()
 
 
