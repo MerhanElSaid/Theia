@@ -20,19 +20,20 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 gender_index = {1: "Female", 0: "Male"}
 gender_model = Model_gend()
-gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth'))
-gender_model = gender_model.to(device)
+gender_model.load_state_dict(torch.load('checkpoints/gender/Enhanced_Gen_colored.pth', map_location=torch.device(device)))
 gender_model.eval()
 
 ### Age Model
-age_classes = [0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 3, 30, 31, 32,
-               4, 5, 6, 7, 8, 9]
-
+Age_classes = [1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 3,
+           30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 4, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 5,
+           50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 6, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 7,
+           70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 8, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 9,
+           90, 91, 92, 93]
 age_model = loadAgeModel()
-if not os.path.isfile('checkpoints/age/Colored_age.pth'):
-    urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah", "checkpoints/age/Colored_age.pth")
-age_model.load_state_dict(torch.load('checkpoints/age/Colored_age.pth'))
-age_model = age_model.to(device)
+if not os.path.isfile("checkpoints/age/colored_model_res50_.pth"):
+    urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1bn0zN6bmf5kBU0p0LghbtVjbGyy0uTyQ", "checkpoints/age/colored_model_res50_.pth")
+age_model.load_state_dict(torch.load('checkpoints/age/colored_model_res50_.pth', map_location=torch.device(device)))
+
 age_model.eval()
 
 #"https://drive.google.com/file/d/1VjEEjOfOkFHc0Qb4rihX-2SEPac41xah/view?usp=sharing"
@@ -43,8 +44,8 @@ age_model.eval()
 
 FER_2013_EMO_DICT = {0: 'Neutral', 1: 'Happiness', 2: 'Surprise', 3: 'Sadness', 4: 'Anger', 5: 'Disgust', 6: 'Fear'}
 Exp_model = Face_Emotion_CNN()
-Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth'))
-Exp_model = Exp_model.to(device)
+Exp_model.load_state_dict(torch.load('checkpoints/Facial_Exp/Model5.pth', map_location=torch.device(device)))
+
 Exp_model.eval()
 
 
@@ -61,11 +62,10 @@ def transform_gender_image(image):
 
 
 def transform_age_image(image):
-    age_trans = transforms.Compose([transforms.Resize(201),
-                                    transforms.RandomCrop(196),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                         std=[0.229, 0.224, 0.225])])
+    age_trans = transforms.Compose([transforms.Resize(130),
+                                         transforms.RandomCrop(128),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     return age_trans(image).unsqueeze(0)
 
@@ -111,7 +111,6 @@ def get_gender_prediction(image):
     if flag == 1:
         image = image_crop(im, face[0], face[1], face[2], face[3])
         image = Image.fromarray(np.uint8(image))
-        #image.save('cropped.jpg')
 
     tensor = transform_gender_image(image=image)
     tensor = tensor.to(device)
@@ -134,10 +133,9 @@ def get_age_prediction(image):
         tensor = tensor.to(device)
         outputs = age_model(tensor)
         _, pred = torch.topk(outputs, 1)
-        pred = age_classes[pred.item()] * 3 + random.randint(1, 3)
-        #age_vector = pred[0].cpu().detach().numpy() * 4
-        #predicted_ages = int(age_vector)
+        pred = Age_classes[pred]
         return int(pred)
+
 
 
 def get_expr_prediction(image):
